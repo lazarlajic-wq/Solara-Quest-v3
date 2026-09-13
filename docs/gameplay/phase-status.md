@@ -57,11 +57,41 @@ Not done / known gap:
   (`slash`, `hurt`, ...) but pairing them per class/weapon is a Phase 3
   (combat) decision — see the style guide's "Known gaps".
 
-## Phase 3 — Kampf und Klassen: NOT STARTED
+## Phase 3 — Kampf und Klassen: SLICE ONLY
 
-No skills, skill tree, skill bar, resource (mana/energy) spending, or
-enemies yet. `ClassDefinition.baseStats` exists as data but isn't consumed
-by any combat system.
+Done:
+- **Real melee combat loop**: Space (or the on-screen sword button on
+  mobile) swings at whatever's in front of the player within
+  `PLAYER_ATTACK_RANGE`/`PLAYER_ATTACK_HIT_RADIUS` (see `config.ts`), on a
+  cooldown. `ClassDefinition.baseStats.attack` is now actually consumed —
+  damage is class-based once a class is chosen, `DEFAULT_ATTACK_DAMAGE`
+  before that. `baseStats.health` now drives the HUD HP value once a class
+  is picked, too.
+- **Training dummies** (`apps/client/src/entities/TrainingDummy.ts`): two
+  stationary practice targets in the start town plaza, with a visible HP
+  bar, that take damage, "die" (grant XP, disappear), and respawn after
+  `DUMMY_RESPAWN_MS`. Deliberately obvious placeholder art (a straw target
+  on a post, procedurally drawn) since no real enemy art exists yet — not a
+  disguised reuse of another asset.
+- **Real XP/leveling** (`apps/client/src/core/PlayerProgress.ts`):
+  defeating a dummy grants `DUMMY_XP_REWARD` XP; leveling now happens
+  through play, not only the dev-only debug key. `CLASS_UNLOCK_LEVEL` (5)
+  is reachable this way, tested end-to-end (dummy kills → level 5 → NPC →
+  ClassSelectScene → equipment swap → HP recalculated from the class).
+  The XP curve (`xpToNextLevel` in `config.ts`) is a placeholder — there's
+  no quest/other XP source yet to calibrate against.
+- HUD now shows level + an XP progress bar alongside HP/Solaris.
+
+Not done:
+- No skill tree, skill bar, or resource (mana/energy) spending —
+  `baseStats.resource`/`resourceType` still aren't consumed anywhere. This
+  is the next natural slice on top of today's combat loop.
+- No real enemies (only the training dummy), no damage taken by the player,
+  no death/respawn for the player, no combat outside the start town.
+- No attack animation — the swing is a small scale-pulse tween on the
+  character sprite, not a real animation (see Phase 2's "Known gaps": LPC's
+  slash/attack frames aren't extracted yet, and pairing them per class
+  weapon is still open).
 
 ## Phase 4 — Erste Region: SLICE ONLY
 
@@ -106,6 +136,10 @@ Character creation → design your look (gender/skin/eyes/hair/beard), enter a
 name (2+ chars) → start town wearing the neutral leather starter outfit.
 WASD/arrows to move (8-direction, diagonal not faster), Shift to dash, E near
 the NPC by the plaza entrance to talk, try walking into the west river to see
-collision. In dev mode, press `K` a few times to level up (stub — see Phase
-2), then talk to the NPC again to unlock class selection at Level 5; picking
-a class swaps only your equipment, not your designed character.
+collision. Walk up to one of the two training dummies in the plaza and press
+Space repeatedly to attack — watch its HP bar drop, then its XP/level-up
+toast and the HUD's level/XP bar once it's defeated. After enough dummy
+kills to reach Level 5 (or, faster, the dev-only `K` debug key), talk to the
+NPC again to unlock class selection; picking a class swaps only your
+equipment (and recalculates HP from `baseStats`), not your designed
+character.

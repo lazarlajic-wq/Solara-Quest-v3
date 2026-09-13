@@ -1,10 +1,28 @@
 import Phaser from "phaser";
-import { normalizeMovement, vectorToDirection, type CharacterAppearance, type ClassId, type Direction } from "@solara/shared";
-import { PLAYER_DASH_COOLDOWN_MS, PLAYER_DASH_DURATION_MS, PLAYER_DASH_SPEED, PLAYER_WALK_SPEED } from "../config";
+import { normalizeMovement, vectorToDirection, type CharacterAppearance, type ClassId, type Direction, type Vector2 } from "@solara/shared";
+import {
+  PLAYER_ATTACK_COOLDOWN_MS,
+  PLAYER_ATTACK_RANGE,
+  PLAYER_DASH_COOLDOWN_MS,
+  PLAYER_DASH_DURATION_MS,
+  PLAYER_DASH_SPEED,
+  PLAYER_WALK_SPEED,
+} from "../config";
 import { CharacterSprite } from "./CharacterSprite";
 import { InputController } from "../core/InputController";
 
 type PlayerState = "idle" | "walk" | "dash" | "attack" | "hit" | "death";
+
+const DIRECTION_VECTORS: Record<Direction, Vector2> = {
+  north: { x: 0, y: -1 },
+  northeast: { x: 0.707, y: -0.707 },
+  east: { x: 1, y: 0 },
+  southeast: { x: 0.707, y: 0.707 },
+  south: { x: 0, y: 1 },
+  southwest: { x: -0.707, y: 0.707 },
+  west: { x: -1, y: 0 },
+  northwest: { x: -0.707, y: -0.707 },
+};
 
 export class Player extends Phaser.GameObjects.Container {
   readonly appearance: CharacterAppearance;
@@ -17,6 +35,7 @@ export class Player extends Phaser.GameObjects.Container {
   private dashingUntil = 0;
   private dashReadyAt = 0;
   private dashVector = { x: 0, y: 1 };
+  private attackReadyAt = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number, appearance: CharacterAppearance, classId: ClassId | null) {
     super(scene, x, y);
@@ -74,6 +93,22 @@ export class Player extends Phaser.GameObjects.Container {
     }
 
     this.applyAnimation();
+  }
+
+  /**
+   * Returns the world-space point of a melee swing in front of the player if
+   * the attack cooldown allows it (and starts the cooldown + visual
+   * feedback), or null if still on cooldown. The scene resolves the actual
+   * hit against nearby damageable entities.
+   */
+  attemptAttack(time: number): Vector2 | null {
+    if (time < this.attackReadyAt) return null;
+    this.attackReadyAt = time + PLAYER_ATTACK_COOLDOWN_MS;
+
+    this.scene.tweens.add({ targets: this.characterSprite, scaleX: 1.15, scaleY: 1.15, duration: 80, yoyo: true });
+
+    const dir = DIRECTION_VECTORS[this.facing];
+    return { x: this.x + dir.x * PLAYER_ATTACK_RANGE, y: this.y + dir.y * PLAYER_ATTACK_RANGE };
   }
 
   private applyAnimation(): void {

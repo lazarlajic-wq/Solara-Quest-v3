@@ -70,7 +70,7 @@ const map = {
   type: "map",
   version: "1.10",
   nextlayerid: 5,
-  nextobjectid: 10,
+  nextobjectid: 12,
   tilesets: [
     {
       firstgid: 1,
@@ -126,6 +126,24 @@ const map = {
           width: TILE,
           height: 2 * TILE,
           properties: [{ name: "targetMapId", type: "string", value: "r1-traininggrounds" }],
+        },
+        {
+          id: 5,
+          name: "dummy_1",
+          type: "dummy",
+          x: 12 * TILE,
+          y: 12 * TILE,
+          width: TILE,
+          height: TILE,
+        },
+        {
+          id: 6,
+          name: "dummy_2",
+          type: "dummy",
+          x: 20 * TILE,
+          y: 12 * TILE,
+          width: TILE,
+          height: TILE,
         },
       ],
     },

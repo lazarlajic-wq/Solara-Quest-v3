@@ -11,7 +11,7 @@
   "type": "map",
   "version": "1.10",
   "nextlayerid": 5,
-  "nextobjectid": 10,
+  "nextobjectid": 12,
   "tilesets": [
     {
       "firstgid": 1,
@@ -1321,6 +1321,24 @@
               "value": "r1-traininggrounds"
             }
           ]
+        },
+        {
+          "id": 5,
+          "name": "dummy_1",
+          "type": "dummy",
+          "x": 1020,
+          "y": 1020,
+          "width": 85,
+          "height": 85
+        },
+        {
+          "id": 6,
+          "name": "dummy_2",
+          "type": "dummy",
+          "x": 1700,
+          "y": 1020,
+          "width": 85,
+          "height": 85
         }
       ]
     }

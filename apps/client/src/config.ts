@@ -19,6 +19,22 @@ export const PLAYER_DASH_COOLDOWN_MS = 900;
 
 export const SKILL_BAR_SLOT_COUNT = 9;
 
+// Combat (Phase 3 first slice: basic melee attack against training dummies —
+// see docs/gameplay/phase-status.md for what's still missing, e.g. real
+// enemies, skills, and resource spending).
+export const DEFAULT_ATTACK_DAMAGE = 10; // used before a class (and its baseStats.attack) is chosen
+export const PLAYER_ATTACK_COOLDOWN_MS = 500;
+export const PLAYER_ATTACK_RANGE = 60; // px, distance from player to the attack point
+export const PLAYER_ATTACK_HIT_RADIUS = 40; // px, how close a target must be to the attack point
+
+export const DUMMY_MAX_HP = 50;
+export const DUMMY_XP_REWARD = 60;
+export const DUMMY_RESPAWN_MS = 4000;
+
+// XP required to go from `level` to `level + 1`. No real combat/quest economy
+// yet, so this is a placeholder curve — revisit once more XP sources exist.
+export const xpToNextLevel = (level: number): number => 50 * level;
+
 export const STORAGE_KEYS = {
   character: "solara.character.v1",
   settings: "solara.settings.v1",

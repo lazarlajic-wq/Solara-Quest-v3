@@ -11,9 +11,11 @@ export class InputController {
   private wasd: { w: Phaser.Input.Keyboard.Key; a: Phaser.Input.Keyboard.Key; s: Phaser.Input.Keyboard.Key; d: Phaser.Input.Keyboard.Key };
   private shiftKey: Phaser.Input.Keyboard.Key;
   private interactKey: Phaser.Input.Keyboard.Key;
+  private attackKey: Phaser.Input.Keyboard.Key;
 
   private joystickVector: Vector2 = { x: 0, y: 0 };
   private isMobile: boolean;
+  private mobileAttackRequested = false;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -27,6 +29,7 @@ export class InputController {
     };
     this.shiftKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
     this.interactKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+    this.attackKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
     this.isMobile = !scene.sys.game.device.os.desktop;
     if (this.isMobile) {
@@ -52,6 +55,15 @@ export class InputController {
 
   isInteractPressed(): boolean {
     return Phaser.Input.Keyboard.JustDown(this.interactKey);
+  }
+
+  isAttackPressed(): boolean {
+    if (Phaser.Input.Keyboard.JustDown(this.attackKey)) return true;
+    if (this.mobileAttackRequested) {
+      this.mobileAttackRequested = false;
+      return true;
+    }
+    return false;
   }
 
   private createVirtualJoystick(): void {
@@ -93,5 +105,18 @@ export class InputController {
     scene.input.on("pointerup", release);
     scene.input.on("pointerupoutside", release);
     base.setVisible(true);
+
+    const attackButton = scene.add
+      .circle(scene.scale.width - 90, scene.scale.height - 110, 40, 0xd45c5c, 0.4)
+      .setScrollFactor(0)
+      .setDepth(1000)
+      .setInteractive({ useHandCursor: true })
+      .on("pointerdown", () => (this.mobileAttackRequested = true));
+    scene.add
+      .text(scene.scale.width - 90, scene.scale.height - 110, "⚔", { fontSize: "28px" })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(1001);
+    void attackButton;
   }
 }

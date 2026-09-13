@@ -15,29 +15,39 @@ whenever a phase's scope changes.
   stable IDs and duplicate-ID detection (`registerId`).
 - Asset path validator (`npm run validate:assets`).
 
-## Phase 2 — Referenzcharakter: PARTIAL
+## Phase 2 — Referenzcharakter: PARTIAL (art quality bar met)
 
 Done:
 - Character creation scene (name + class selection, all 5 classes genuinely
-  selectable and playable).
-- 8-direction-aware movement/animation **architecture**
-  (`vectorToDirection`, `normalizeMovement`, diagonal speed normalized).
+  selectable and playable, each with a real animated preview sprite).
+- **All five classes have real, distinct, style-consistent art** — 4-direction
+  (south/north/east/west) walk cycles composed with the Universal LPC
+  Spritesheet Generator, replacing the earlier single-pose/tinted
+  placeholders. See `docs/art-direction/CREDITS.md` (attribution required)
+  and `docs/art-direction/style-guide.md` (exact selections, how to
+  reproduce/extend).
+- 4-direction-aware movement/animation, no mirroring needed
+  (`vectorToDirection`, `normalizeMovement`, diagonal speed normalized,
+  diagonals collapse to nearest cardinal).
 - Desktop controls (WASD/arrows, Shift dash, E interact) and a basic mobile
   virtual joystick.
 - Camera, world bounds, tile collision.
 
 Not done / known gap:
-- Only **one** authored direction exists in the reference art (see
-  `docs/art-direction/style-guide.md` for why) — not the full 8. The engine
-  doesn't need to change when real 8-direction art lands, only the manifest
-  and `AUTHORED_DIRECTIONS`.
-- Visible equipment layering (modular body/hair/armor/weapon layers) is not
-  implemented — there is one flat character sprite per class right now.
+- True 8-direction diagonal art (currently diagonals reuse the nearest
+  cardinal — see `AUTHORED_DIRECTIONS` in `packages/shared/src/direction.ts`).
+- Visible equipment layering as separate swappable layers at runtime is not
+  implemented — each class is one baked-together sheet from the generator
+  rather than live body+armor+weapon layers. Re-running the generator with
+  different gear produces a new baked sheet; true runtime layering (for
+  showing looted equipment on the player) is future work.
 - Character customization (skin/eye color, hairstyle, scars, etc.) is not
-  implemented in the creation screen yet — only name + class.
-- Dash/attack/hit/death animations are wired in code (`CharacterAnimations.ts`)
-  but only idle/walk are actually exercised by the current Player state
-  machine; attack/hit/death need combat (Phase 3) to trigger them.
+  exposed in the creation screen yet — only name + class. The generator
+  supports all of this per-layer; only each class's preset is used today.
+- Attack/hurt/death animations aren't wired yet — only idle/walk are
+  exercised by the current Player state machine. The LPC catalog has these
+  (`slash`, `hurt`, ...) but pairing them per class/weapon is a Phase 3
+  (combat) decision — see the style guide's "Known gaps".
 
 ## Phase 3 — Kampf und Klassen: NOT STARTED
 

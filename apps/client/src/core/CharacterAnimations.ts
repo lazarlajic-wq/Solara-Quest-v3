@@ -1,39 +1,41 @@
 import type Phaser from "phaser";
+import { resolveDirectionFallback, type Direction } from "@solara/shared";
 
 /**
- * Frame layout of the placeholder "swordsman" sheet: a 10-column grid where
- * row 0 is the one consistent, style-checked pose set we currently have
- * (see AUTHORED_DIRECTIONS limitation in @solara/shared). Columns map to:
- * 0 idle, 1-4 walk cycle, 5-6 attack, 7 hit, 8-9 death.
+ * Frame layout shared by every character sheet (spec: same dimensions/frame
+ * order across classes so they're drop-in interchangeable). Each is an
+ * 8-column x 4-row grid of 128x128 frames, composed with the Universal LPC
+ * Spritesheet Generator: row 0 south, row 1 north, row 2 east, row 3 west,
+ * 8-frame walk cycle per row. See docs/art-direction/CREDITS.md.
  */
-const ROW0 = {
-  idle: [0],
-  walk: [1, 2, 3, 4],
-  attack: [5, 6],
-  hit: [7],
-  death: [8, 9],
+const DIRECTIONAL_ROW: Record<"south" | "north" | "east" | "west", number> = {
+  south: 0,
+  north: 1,
+  east: 2,
+  west: 3,
 };
 
-export function createSwordsmanAnimations(anims: Phaser.Animations.AnimationManager): void {
-  const key = "char_swordsman";
-  const def = (name: string, frames: number[], frameRate: number, repeat: number) => {
-    const animKey = `${key}_${name}`;
+/** Registers idle/walk animations for one character texture key (e.g. "char_swordsman"). */
+export function createCharacterAnimations(anims: Phaser.Animations.AnimationManager, textureKey: string): void {
+  const def = (animKey: string, frames: number[], frameRate: number, repeat: number) => {
     if (anims.exists(animKey)) return;
     anims.create({
       key: animKey,
-      frames: anims.generateFrameNumbers(key, { frames }),
+      frames: anims.generateFrameNumbers(textureKey, { frames }),
       frameRate,
       repeat,
     });
   };
 
-  def("idle", ROW0.idle, 4, -1);
-  def("walk", ROW0.walk, 8, -1);
-  def("attack", ROW0.attack, 10, 0);
-  def("hit", ROW0.hit, 10, 0);
-  def("death", ROW0.death, 6, 0);
+  for (const [direction, row] of Object.entries(DIRECTIONAL_ROW) as [keyof typeof DIRECTIONAL_ROW, number][]) {
+    const base = row * 8;
+    const walkFrames = Array.from({ length: 8 }, (_, i) => base + i);
+    def(characterAnimKey(textureKey, "idle", direction), [base], 4, -1);
+    def(characterAnimKey(textureKey, "walk", direction), walkFrames, 10, -1);
+  }
 }
 
-export function swordsmanAnimKey(state: "idle" | "walk" | "attack" | "hit" | "death"): string {
-  return `char_swordsman_${state}`;
+export function characterAnimKey(textureKey: string, state: "idle" | "walk", direction: Direction): string {
+  const { authored } = resolveDirectionFallback(direction);
+  return `${textureKey}_${state}_${authored}`;
 }

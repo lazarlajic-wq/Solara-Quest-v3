@@ -1,18 +1,11 @@
 import Phaser from "phaser";
-import { normalizeMovement, resolveDirectionFallback, vectorToDirection, type Direction } from "@solara/shared";
+import { normalizeMovement, vectorToDirection, type Direction } from "@solara/shared";
 import type { ClassDefinition } from "@solara/shared";
 import { PLAYER_DASH_COOLDOWN_MS, PLAYER_DASH_DURATION_MS, PLAYER_DASH_SPEED, PLAYER_WALK_SPEED } from "../config";
-import { swordsmanAnimKey } from "../core/CharacterAnimations";
+import { characterAnimKey } from "../core/CharacterAnimations";
 import { InputController } from "../core/InputController";
 
 type PlayerState = "idle" | "walk" | "dash" | "attack" | "hit" | "death";
-
-const PLACEHOLDER_TINTS: Partial<Record<ClassDefinition["id"], number>> = {
-  tank: 0x9db4d4,
-  mage: 0xb98bff,
-  archer: 0x8bffa8,
-  assassin: 0xff8b8b,
-};
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   readonly classDefinition: ClassDefinition;
@@ -24,25 +17,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private dashVector = { x: 0, y: 1 };
 
   constructor(scene: Phaser.Scene, x: number, y: number, classDefinition: ClassDefinition) {
-    // Only the swordsman has a real, style-checked sprite sheet right now
-    // (see AUTHORED_DIRECTIONS limitation). Other classes reuse that sheet
-    // tinted by class as a documented placeholder — see
-    // docs/gameplay/phase-status.md, Phase 2.
-    const hasArt = scene.textures.exists(classDefinition.spriteSheetKey);
-    super(scene, x, y, hasArt ? classDefinition.spriteSheetKey : "char_swordsman", 0);
+    super(scene, x, y, classDefinition.spriteSheetKey, 0);
     this.classDefinition = classDefinition;
     scene.add.existing(this);
     scene.physics.add.existing(this);
-
-    if (!hasArt) {
-      this.setTint(PLACEHOLDER_TINTS[classDefinition.id] ?? 0xffffff);
-    }
 
     this.setCollideWorldBounds(true);
     this.setSize(48, 40);
     this.setOffset(40, 80);
     this.setDepth(10);
-    this.play(swordsmanAnimKey("idle"));
+    this.play(characterAnimKey(classDefinition.spriteSheetKey, "idle", "south"));
   }
 
   override update(input: InputController, time: number): void {
@@ -77,17 +61,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.movementState = "idle";
     }
 
-    this.applyFacing();
     this.applyAnimation();
   }
 
-  private applyFacing(): void {
-    const { flipX } = resolveDirectionFallback(this.facing);
-    this.setFlipX(flipX);
-  }
-
   private applyAnimation(): void {
-    const key = this.movementState === "walk" || this.movementState === "dash" ? swordsmanAnimKey("walk") : swordsmanAnimKey("idle");
+    const state = this.movementState === "walk" || this.movementState === "dash" ? "walk" : "idle";
+    const key = characterAnimKey(this.classDefinition.spriteSheetKey, state, this.facing);
     if (this.anims.currentAnim?.key !== key) this.play(key);
   }
 }

@@ -58,28 +58,42 @@ export function normalizeMovement(vector: Vector2): Vector2 {
  * Directions that currently ship with a fully authored, style-checked sprite.
  * Everything else falls back through {@link resolveDirectionFallback}.
  *
- * KNOWN LIMITATION (tracked here on purpose, not hidden in code): the only
- * reference sprite sheet available right now (the "warrior-topdown" set)
- * was generated as one consistent character across a single facing only —
- * every other row in that sheet drifts in hairstyle/color between rows, so
- * it fails the "Animationskonsistenz" QA gate in
- * docs/art-direction/style-guide.md and cannot be used as real north/east/west
- * art. Until a proper 8-direction, style-checked set is generated, every
- * direction resolves to this single authored "south" pose, mirrored on the
- * X axis for anything facing generally left. See
- * docs/gameplay/phase-status.md, Phase 2.
+ * All five classes now have real south/north/east/west walk cycles, composed
+ * with the Universal LPC Spritesheet Generator (Liberated Pixel Cup) — see
+ * docs/art-direction/CREDITS.md for required attribution and
+ * docs/art-direction/style-guide.md for how these were assembled. Diagonals
+ * still collapse to the nearest authored cardinal — see
+ * docs/gameplay/phase-status.md, Phase 2, for the plan to author true
+ * 8-direction diagonal frames.
  */
-export const AUTHORED_DIRECTIONS: readonly Direction[] = ["south"] as const;
+export const AUTHORED_DIRECTIONS: readonly Direction[] = ["south", "north", "east", "west"] as const;
 
 /**
- * Resolves a requested direction to an authored one. See the limitation
- * documented on {@link AUTHORED_DIRECTIONS}: everything currently maps to
- * "south", mirrored via flipX for directions with a westward component.
+ * Resolves a requested direction to an authored one + whether to mirror it.
+ * All four cardinals are authored directly (no mirroring needed); diagonals
+ * collapse to the nearest authored cardinal (south/north win over east/west,
+ * matching how most top-down RPGs bias diagonal sprites toward the vertical
+ * read).
  */
 export function resolveDirectionFallback(direction: Direction): {
   authored: Direction;
   flipX: boolean;
 } {
-  const flipX = direction === "west" || direction === "northwest" || direction === "southwest";
-  return { authored: "south", flipX };
+  switch (direction) {
+    case "south":
+    case "north":
+    case "east":
+    case "west":
+      return { authored: direction, flipX: false };
+    case "southeast":
+      return { authored: "south", flipX: false };
+    case "southwest":
+      return { authored: "south", flipX: false };
+    case "northeast":
+      return { authored: "north", flipX: false };
+    case "northwest":
+      return { authored: "north", flipX: false };
+    default:
+      return { authored: "south", flipX: false };
+  }
 }

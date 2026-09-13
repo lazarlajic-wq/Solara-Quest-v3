@@ -21,45 +21,91 @@ An asset may only be wired into the manifest/game if it passes:
 7. **Animation consistency** — the same character/object must look like the
    same character/object across every frame and every direction.
 
-## Known failing asset: `warrior-topdown-v2.png`
+## Character sprites: Universal LPC Spritesheet Generator
 
-The only character sheet available at the start of this project
-(`apps/client/public/assets/characters/swordsman.png`, sourced from an earlier
-Higgsfield generation attempt) is a 10×8 grid of 128×128 frames. Column-wise it
-reads as one animation cycle (idle → walk → attack → hit → death), but
-**row-wise the hairstyle and coloring drift** — it was very likely meant to be
-an 8-direction sheet (8 rows) and failed the consistency check in criterion 7
-above. Using every row as a distinct direction would mean the character
-visibly changes identity when it turns, which is explicitly disallowed
-(spec section 4).
+All five classes now have real, QA-passing 4-direction (south/north/east/west)
+walk-cycle sheets, composed with the **Universal LPC Spritesheet Character
+Generator** (Liberated Pixel Cup art) rather than generated from scratch —
+see [`CREDITS.md`](CREDITS.md) for the required attribution, which **must**
+stay reachable in-game.
 
-**Decision:** only row 0 is used, as a single authored pose (`AUTHORED_DIRECTIONS
-= ["south"]` in `packages/shared/src/direction.ts`), mirrored on the X axis for
-anything facing generally west. This is a documented, working placeholder —
-not a silent shortcut — and the engine (`resolveDirectionFallback`,
-`AnimationDefinition`, `DirectionalAnimationSet`) is already written to accept
-a full 8-direction set the moment one exists, with no code changes beyond
-updating `AUTHORED_DIRECTIONS` and the manifest.
+This replaced an earlier failed attempt (a Higgsfield-generated 10x8 sheet
+where hairstyle/color drifted row-to-row, failing QA criterion 7 above — kept
+only as a cautionary note, the file itself is gone).
 
-## Backlog: generating a real reference character
+### Why LPC over pure image generation
 
-To close this gap with Higgsfield (or another generator), regenerate the
-Swordsman as **8 separate direction passes of the same seed/character**
-(not one grid asking for 8 rows at once), each with the full idle/walk/
-attack/hit/death cycle, then run them through the QA gate above before
-touching `AUTHORED_DIRECTIONS`. The same process then extends to the other
-four classes (Tank, Mage, Archer, Assassin), which currently use a tinted
-copy of the Swordsman sheet as an even more temporary stand-in
-(`PLACEHOLDER_TINTS` in `apps/client/src/entities/Player.ts`).
+- Real, consistent multi-direction art (no mirroring hacks) with correctly
+  rigged walk cycles per direction, already passing criterion 7.
+- Modular equipment layers (body/hair/torso/legs/feet/weapon/shield/hat/cape/
+  quiver/...) matching the modular-character requirement in spec section 6 —
+  thousands of combinations available without generating anything.
+- Clearly licensed (OGA-BY/CC-BY-SA/GPL, per-asset in `LPC-CREDITS.csv`) —
+  Higgsfield-generated art has no equivalent provenance trail.
+
+### Frame layout (all 5 class sheets, identical)
+
+`apps/client/public/assets/characters/{class}-directional.png` — 8 columns x
+4 rows of 128x128 frames:
+
+| Row | Direction | Columns |
+|-----|-----------|---------|
+| 0   | south     | 8-frame walk cycle |
+| 1   | north     | 8-frame walk cycle |
+| 2   | east      | 8-frame walk cycle |
+| 3   | west      | 8-frame walk cycle |
+
+Built from the generator's canonical full spritesheet export, which places
+"walk" at a **fixed** pixel offset (`x:0, y:512`, 512x256, rows in
+up/left/down/right order) regardless of which other animations are included
+— see `ANIMATION_OFFSETS`/`ANIMATION_CONFIGS` in the generator's
+`sources/state/constants.ts` if reproducing this. Reordered to
+south/north/east/west and upscaled 2x (nearest-neighbor) to match this
+project's 128px frame convention.
+
+### Per-class selections (for reproducing/editing)
+
+Run the generator locally (`npm install --ignore-scripts && npm run dev`),
+then open with the class's hash appended to reload that exact build:
+
+- **Swordsman**: `#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light&armour=Legion_steel&legs=Armour_steel&weapon=Longsword&hair=Spiked_dark_brown&shoes=Basic_Boots_leather`
+- **Tank**: `#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light&armour=Plate_steel&legs=Armour_steel&shoes=Basic_Boots_leather&hat=Legion_steel&shield=Round_Shield&weapon=Mace`
+- **Mage**: `#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light&clothes=Longsleeve_purple&legs=Pantaloons_purple&cape=Solid_purple&hat=Wizard_Hat_Base&weapon=Simple_staff&hair=Long_dark_brown`
+- **Archer**: `#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light&vest=Vest_green&legs=Pants_brown&shoes=Basic_Boots_leather&weapon=Recurve&quiver=Quiver&hair=Ponytail_dark_brown`
+- **Assassin**: `#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light&hat=Sack_Cloth_Hood_black&vest=Vest_black&legs=Pants_black&shoes=Basic_Boots_leather&weapon=Dagger`
+
+Export via the "Spritesheet (PNG)" button (or, headlessly,
+`document.getElementById('spritesheet-preview').toDataURL('image/png')` in
+the browser console), crop `512x256` at `(0, 512)`, split into 4x `512x64`
+rows, reorder to south/north/east/west, then
+`magick <reordered> -filter point -resize 200% <class>-directional.png`.
+
+### Known gaps (see `docs/gameplay/phase-status.md`, Phase 2/3)
+
+- Only **walk** (+ implicit idle from frame 0) is authored per direction.
+  Attack/hurt/death animations exist in the LPC catalog (`slash`, `hurt`,
+  etc.) but need a weapon-aware pairing decision once Phase 3 (combat)
+  defines what each class's attack should look like — a first attempt at
+  reusing "slash" broke because heavy weapons like the Longsword only
+  support `slash_oversize`/`thrust_oversize`, not plain `slash`.
+- Diagonal directions (northeast/southwest/...) still collapse to the
+  nearest cardinal (`resolveDirectionFallback` in
+  `packages/shared/src/direction.ts`) — true 8-direction art is a stretch
+  goal, not urgent given LPC's own convention is 4-direction.
+- Visual customization at character creation (skin/eye color, face, scars)
+  isn't exposed yet — the generator supports all of this per-layer; only the
+  class's preset combination is used today.
 
 ## Other available placeholder-quality source art
 
-Not yet integrated, but present under the project's reference material and
-usable as later starting points (still needs the same QA pass before
-integration): topdown mage/paladin/ranger sheets, three pet sprite sheets,
-and 14 NPC portrait/topdown pieces (alchemist, bard, blacksmith, fisher,
-healer, innkeeper, merchant, miner, raid mystic, sailor, scholar, swamp
-herbalist, trainer, villager).
+Not yet integrated: topdown mage/paladin/ranger Higgsfield sheets, three pet
+sprite sheets, and 14 NPC portrait/topdown pieces (alchemist, bard,
+blacksmith, fisher, healer, innkeeper, merchant, miner, raid mystic, sailor,
+scholar, swamp herbalist, trainer, villager) — still need the QA pass above,
+and NPCs in particular are a strong candidate for the same LPC-generator
+workflow used for player characters (it has civilian/NPC-appropriate
+clothing and can reuse the same layering pipeline) rather than more
+Higgsfield generation.
 
 ## Asset folder structure (spec section 35)
 

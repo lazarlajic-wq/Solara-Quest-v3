@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { CLASS_DEFINITIONS } from "@solara/content";
 import type { ClassDefinition, ClassId } from "@solara/shared";
 import { GAME_HEIGHT, GAME_WIDTH, STORAGE_KEYS } from "../config";
+import { characterAnimKey, createCharacterAnimations } from "../core/CharacterAnimations";
 
 export interface SavedCharacter {
   name: string;
@@ -9,12 +10,12 @@ export interface SavedCharacter {
 }
 
 /**
- * Minimal but fully wired character creation (spec section 6): name entry +
- * class selection. Visual customization (skin/hair/eyes/scars/…) is
- * intentionally deferred until the modular layered-character art exists —
- * see docs/gameplay/phase-status.md. The class picker is real and every
- * class is genuinely selectable and playable now, even the four that still
- * use placeholder art.
+ * Character creation (spec section 6): name entry + class selection, with a
+ * live animated preview of each class's real sprite. Visual customization
+ * (skin/hair/eyes/scars/…) is intentionally deferred until the modular
+ * layered-character art exists — see docs/gameplay/phase-status.md. All five
+ * classes are genuinely selectable and playable with their own art (see
+ * docs/art-direction/CREDITS.md for the required attribution).
  */
 export class CharacterCreateScene extends Phaser.Scene {
   private nameBuffer = "";
@@ -29,6 +30,10 @@ export class CharacterCreateScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor("#12161f");
+
+    for (const def of CLASS_DEFINITIONS) {
+      createCharacterAnimations(this.anims, def.spriteSheetKey);
+    }
 
     this.add
       .text(GAME_WIDTH / 2, 40, "SOLARA QUEST — Charaktererstellung", { fontSize: "24px", color: "#ffffff", fontStyle: "bold" })
@@ -62,6 +67,13 @@ export class CharacterCreateScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true })
       .on("pointerdown", () => this.tryStart());
 
+    this.add
+      .text(GAME_WIDTH / 2, GAME_HEIGHT - 12, "Charakter-Art: Universal LPC Spritesheet Generator (Liberated Pixel Cup) — siehe CREDITS.md", {
+        fontSize: "10px",
+        color: "#5a6478",
+      })
+      .setOrigin(0.5);
+
     this.updateStartButton();
   }
 
@@ -73,17 +85,13 @@ export class CharacterCreateScene extends Phaser.Scene {
       const container = this.add.container(x, y);
 
       const bg = this.add.rectangle(0, 0, 150, 220, 0x1c2333).setStrokeStyle(2, 0x3a4258);
-      const portrait = this.add.rectangle(0, -50, 90, 90, def.hasFullArt ? 0x8bd3ff : 0x4a4f5c);
-      const name = this.add.text(0, 20, def.name, { fontSize: "16px", color: "#ffffff", fontStyle: "bold" }).setOrigin(0.5);
-      const role = this.add.text(0, 42, def.role, { fontSize: "11px", color: "#9aa4b8" }).setOrigin(0.5);
-      const badge = this.add
-        .text(0, 90, def.hasFullArt ? "Vollständiges Art-Set" : "Platzhalter-Art", {
-          fontSize: "10px",
-          color: def.hasFullArt ? "#8bffb0" : "#ffb08b",
-        })
-        .setOrigin(0.5);
+      const portrait = this.add.sprite(0, -50, def.spriteSheetKey, 0).setScale(1.2);
+      portrait.play(characterAnimKey(def.spriteSheetKey, "idle", "south"));
+      const name = this.add.text(0, 30, def.name, { fontSize: "16px", color: "#ffffff", fontStyle: "bold" }).setOrigin(0.5);
+      const role = this.add.text(0, 52, def.role, { fontSize: "11px", color: "#9aa4b8" }).setOrigin(0.5);
+      const weapon = this.add.text(0, 90, def.weaponName, { fontSize: "10px", color: "#8bd3ff" }).setOrigin(0.5);
 
-      container.add([bg, portrait, name, role, badge]);
+      container.add([bg, portrait, name, role, weapon]);
       container.setSize(150, 220);
       container.setInteractive(new Phaser.Geom.Rectangle(-75, -110, 150, 220), Phaser.Geom.Rectangle.Contains);
       container.on("pointerdown", () => this.selectClass(def, container));

@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--workspace=apps/client", "--", "--port", "5173"],
       "port": 5173
+    },
+    {
+      "name": "lpc-generator",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "/Users/Lazar/Documents/lpc-generator", "run", "dev", "--", "--port", "5180"],
+      "port": 5180
     }
   ]
 }

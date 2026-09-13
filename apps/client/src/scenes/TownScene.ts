@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { getClassDefinition } from "@solara/content";
 import { STORAGE_KEYS } from "../config";
-import { createSwordsmanAnimations } from "../core/CharacterAnimations";
+import { createCharacterAnimations } from "../core/CharacterAnimations";
 import { InputController } from "../core/InputController";
 import { Player } from "../entities/Player";
 import { HUD } from "../ui/HUD";
@@ -40,9 +40,9 @@ export class TownScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
-    createSwordsmanAnimations(this.anims);
-
     const classDef = getClassDefinition(character.classId);
+    createCharacterAnimations(this.anims, classDef.spriteSheetKey);
+
     const spawn = map.findObject("spawns", (o) => o.name === "player_spawn");
     this.player = new Player(this, spawn?.x ?? 100, spawn?.y ?? 100, classDef);
     this.cameras.main.startFollow(this.player, true, 0.15, 0.15);

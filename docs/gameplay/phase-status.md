@@ -93,11 +93,27 @@ Done:
 - **Player death/respawn**: HP hitting 0 shows a toast and teleports the
   player back to `player_spawn` with full HP after `PLAYER_RESPAWN_DELAY_MS`
   — no penalty (XP/Solaris loss, invulnerability window) yet.
+- **First skill bar slice** (`packages/content/src/skills.ts`,
+  `apps/client/src/ui/SkillBar.ts`): each class has three real active
+  skills, unlocked together with the class itself (no skill-tree/skill-point
+  spending yet — `skillPointCost` is 0 and unused). Keys 1-3 (or the
+  matching mobile buttons) cast them, consuming `baseStats.resource`
+  (mana or energy, now finally shown and spent) on a per-skill cooldown.
+  Every skill resolves through one of three generic effects: `strike` (a
+  bigger single-target hit further out than the basic attack), `nova` (an
+  area burst centered on the player), or `heal` (restores the player's own
+  HP) — damage scales off `baseStats.attack` via each skill's
+  `damageMultiplier`. Resource regenerates passively
+  (`RESOURCE_REGEN_PER_SEC`). The HUD's 9-slot bar (spec's 1-9 keys) shows
+  real icons — generated with Higgsfield (GPT Image 2, transparent
+  background) — for slots 1-3 and empty placeholders for 4-9, since no
+  skills exist for those slots yet; each icon dims when unaffordable and
+  shows a cooldown wipe.
 
 Not done:
-- No skill tree, skill bar, or resource (mana/energy) spending —
-  `baseStats.resource`/`resourceType` still aren't consumed anywhere. This
-  is the next natural slice on top of today's combat loop.
+- No skill tree or skill points — every class's 3 skills unlock all at
+  once with the class, there's no branching/leveling-up of individual
+  skills, and slots 4-9 of the bar are permanently empty in this slice.
 - `baseStats.defense` still isn't consumed — enemy damage is a flat
   `ENEMY_DAMAGE` regardless of the defending class's defense stat.
 - No attack animation — the swing is a small scale-pulse tween on the
@@ -131,9 +147,10 @@ real content.
 
 ## Cross-cutting systems not yet started
 
-Skill trees, skill bar (1–9), equipment/inventory, NPC dialogue trees beyond
-one line, enemies/bosses, quests, Solaris economy, pets, player marketplace
-(spec sections 26–32) — none implemented. `packages/shared/src/economy.ts`
+Skill trees (skill points, branching), equipment/inventory, NPC dialogue
+trees beyond one line, bosses, quests, Solaris economy, pets, player
+marketplace (spec sections 26–32) — none implemented. A first skill *bar*
+slice exists (see Phase 3). `packages/shared/src/economy.ts`
 has the market-fee formula (5%, round-then-subtract) ready and unit-testable
 ahead of the marketplace UI existing.
 
@@ -160,4 +177,8 @@ death/respawn-at-town toast, or fight back to defeat one for XP. After
 enough kills to reach Level 5 (or, faster, the dev-only `K` debug key), talk
 to the NPC again to unlock class selection; picking a class swaps only your
 equipment (and recalculates HP from `baseStats`), not your designed
-character.
+character. Once a class is chosen, the bottom skill bar lights up slots 1-3
+with your class's three skills — press 1/2/3 (or the matching on-screen
+buttons on mobile) to cast them against a dummy or slime: watch your
+mana/energy bar (under HP) drop and the slot's cooldown wipe fill in; try
+pressing one you can't afford yet to see the "not enough mana/energy" toast.

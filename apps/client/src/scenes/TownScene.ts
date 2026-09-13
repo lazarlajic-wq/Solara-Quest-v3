@@ -1,6 +1,6 @@
 import Phaser from "phaser";
-import { getClassDefinition } from "@solara/content";
-import { CLASS_UNLOCK_LEVEL } from "@solara/shared";
+import { getClassDefinition, getSkillsForClass } from "@solara/content";
+import { CLASS_UNLOCK_LEVEL, type SkillDefinition } from "@solara/shared";
 import {
   DEFAULT_ATTACK_DAMAGE,
   DUMMY_XP_REWARD,
@@ -8,6 +8,7 @@ import {
   ENEMY_XP_REWARD,
   PLAYER_ATTACK_HIT_RADIUS,
   PLAYER_RESPAWN_DELAY_MS,
+  RESOURCE_REGEN_PER_SEC,
   STORAGE_KEYS,
   xpToNextLevel,
 } from "../config";
@@ -18,6 +19,7 @@ import { addXp, debugLevelUp, loadProgress, type PlayerProgress } from "../core/
 import { Player } from "../entities/Player";
 import { TrainingDummy } from "../entities/TrainingDummy";
 import { HUD } from "../ui/HUD";
+import { SkillBar } from "../ui/SkillBar";
 import type { SavedCharacter } from "./CharacterCreateScene";
 
 const DEFAULT_HEALTH = 100;
@@ -38,6 +40,7 @@ export class TownScene extends Phaser.Scene {
   private player!: Player;
   private input_!: InputController;
   private hud!: HUD;
+  private skillBar!: SkillBar;
   private interactables: Phaser.GameObjects.Zone[] = [];
   private dummies: TrainingDummy[] = [];
   private enemies: Enemy[] = [];
@@ -47,6 +50,11 @@ export class TownScene extends Phaser.Scene {
   private playerMaxHp = 0;
   private playerDefeated = false;
   private spawnPoint = { x: 100, y: 100 };
+  private skills: SkillDefinition[] = [];
+  private playerResource = 0;
+  private playerMaxResource = 0;
+  private resourceType: "mana" | "energy" | null = null;
+  private skillReadyAt = new Map<string, number>();
 
   constructor() {
     super("Town");
@@ -60,6 +68,14 @@ export class TownScene extends Phaser.Scene {
     }
     this.character = character;
     this.progress = loadProgress();
+    // Phaser reuses this Scene instance across visits (e.g. leaving for
+    // ClassSelect and coming back) — reset per-visit collections so stale
+    // references to last time's (now-destroyed) entities don't linger.
+    this.interactables = [];
+    this.dummies = [];
+    this.enemies = [];
+    this.skillReadyAt = new Map();
+    this.playerDefeated = false;
 
     const map = this.make.tilemap({ key: "map_starttown" });
     const tileset = map.addTilesetImage("starttown", "tileset_starttown")!;
@@ -83,9 +99,22 @@ export class TownScene extends Phaser.Scene {
 
     this.input_ = new InputController(this);
     this.hud = new HUD(this);
-    this.playerMaxHp = character.classId ? getClassDefinition(character.classId).baseStats.health : DEFAULT_HEALTH;
+    this.skillBar = new SkillBar(this);
+
+    if (character.classId) {
+      const classDef = getClassDefinition(character.classId);
+      this.playerMaxHp = classDef.baseStats.health;
+      this.playerMaxResource = classDef.baseStats.resource;
+      this.resourceType = classDef.resourceType;
+      this.skills = getSkillsForClass(character.classId);
+      this.skillBar.setSkills(this.skills);
+    } else {
+      this.playerMaxHp = DEFAULT_HEALTH;
+    }
     this.playerHp = this.playerMaxHp;
+    this.playerResource = this.playerMaxResource;
     this.hud.setHealth(this.playerHp, this.playerMaxHp);
+    this.hud.setResource(this.playerResource, this.playerMaxResource, this.resourceType);
     this.hud.setSolaris(0);
     this.updateLevelHud();
     this.hud.showToast(`Willkommen, ${character.name} (Level ${this.progress.level})`);
@@ -99,11 +128,14 @@ export class TownScene extends Phaser.Scene {
     }
   }
 
-  override update(time: number): void {
+  override update(time: number, delta: number): void {
     this.player.update(this.input_, time);
     for (const enemy of this.enemies) enemy.update(time, { x: this.player.x, y: this.player.y });
     this.checkInteractions();
     this.checkAttack(time);
+    this.checkSkills(time);
+    this.regenResource(delta);
+    this.skillBar.update(time, this.playerResource, this.skillReadyAt);
   }
 
   private loadSavedCharacter(): SavedCharacter | null {
@@ -201,6 +233,61 @@ export class TownScene extends Phaser.Scene {
         target.takeDamage(damage);
       }
     }
+  }
+
+  private regenResource(delta: number): void {
+    if (this.resourceType === null || this.playerResource >= this.playerMaxResource) return;
+    this.playerResource = Math.min(this.playerMaxResource, this.playerResource + (RESOURCE_REGEN_PER_SEC * delta) / 1000);
+    this.hud.setResource(this.playerResource, this.playerMaxResource, this.resourceType);
+  }
+
+  private checkSkills(time: number): void {
+    const slot = this.input_.requestedSkillSlot();
+    if (!slot) return;
+    const skill = this.skills.find((s) => s.barSlot === slot);
+    if (!skill) return;
+
+    const readyAt = this.skillReadyAt.get(skill.id) ?? 0;
+    if (time < readyAt) return;
+    if (this.playerResource < skill.resourceCost) {
+      this.hud.showToast(`Nicht genug ${this.resourceType === "mana" ? "Mana" : "Energie"} für ${skill.name}.`);
+      return;
+    }
+
+    this.skillReadyAt.set(skill.id, time + skill.cooldownMs);
+    this.playerResource -= skill.resourceCost;
+    this.hud.setResource(this.playerResource, this.playerMaxResource, this.resourceType);
+    this.player.playSkillCastFeedback();
+    this.resolveSkillEffect(skill);
+  }
+
+  private resolveSkillEffect(skill: SkillDefinition): void {
+    const damage = skill.damageMultiplier
+      ? Math.round((this.character.classId ? getClassDefinition(this.character.classId).baseStats.attack : DEFAULT_ATTACK_DAMAGE) * skill.damageMultiplier)
+      : 0;
+    const targets: Damageable[] = [...this.dummies, ...this.enemies];
+
+    if (skill.effect === "strike") {
+      const point = this.player.aimPoint(skill.range ?? 0);
+      for (const target of targets) {
+        if (!target.isAlive()) continue;
+        if (Phaser.Math.Distance.Between(point.x, point.y, target.x, target.y) <= (skill.radius ?? 0)) {
+          target.takeDamage(damage);
+        }
+      }
+    } else if (skill.effect === "nova") {
+      for (const target of targets) {
+        if (!target.isAlive()) continue;
+        if (Phaser.Math.Distance.Between(this.player.x, this.player.y, target.x, target.y) <= (skill.radius ?? 0)) {
+          target.takeDamage(damage);
+        }
+      }
+    } else if (skill.effect === "heal") {
+      this.playerHp = Math.min(this.playerMaxHp, this.playerHp + (skill.healAmount ?? 0));
+      this.hud.setHealth(this.playerHp, this.playerMaxHp);
+    }
+
+    this.hud.showToast(`${skill.name} eingesetzt.`);
   }
 
   private grantXp(amount: number, source: string): void {

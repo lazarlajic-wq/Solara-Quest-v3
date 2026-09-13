@@ -13,7 +13,7 @@ import { InputController } from "../core/InputController";
 
 type PlayerState = "idle" | "walk" | "dash" | "attack" | "hit" | "death";
 
-const DIRECTION_VECTORS: Record<Direction, Vector2> = {
+export const DIRECTION_VECTORS: Record<Direction, Vector2> = {
   north: { x: 0, y: -1 },
   northeast: { x: 0.707, y: -0.707 },
   east: { x: 1, y: 0 },
@@ -109,6 +109,17 @@ export class Player extends Phaser.GameObjects.Container {
 
     const dir = DIRECTION_VECTORS[this.facing];
     return { x: this.x + dir.x * PLAYER_ATTACK_RANGE, y: this.y + dir.y * PLAYER_ATTACK_RANGE };
+  }
+
+  /** World-space point a `range` in front of the player, for a "strike"-type skill's hit check. */
+  aimPoint(range: number): Vector2 {
+    const dir = DIRECTION_VECTORS[this.facing];
+    return { x: this.x + dir.x * range, y: this.y + dir.y * range };
+  }
+
+  /** Shared visual feedback for casting a skill (nova/heal have no aim point of their own to pulse on). */
+  playSkillCastFeedback(): void {
+    this.scene.tweens.add({ targets: this.characterSprite, scaleX: 1.2, scaleY: 1.2, duration: 110, yoyo: true });
   }
 
   private applyAnimation(): void {

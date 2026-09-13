@@ -46,6 +46,14 @@ from an earlier prototype pass; origin/license not yet re-verified for this
 repo. Treat as placeholder until sourced/licensed properly (tracked in
 `docs/gameplay/phase-status.md`).
 
+## Skill bar icons
+
+`apps/client/public/assets/ui/skills/*.png` (the 15 active-skill icons — see
+`packages/content/src/skills.ts`) were AI-generated with **Higgsfield**
+(GPT Image 2 model, transparent background, one prompt per skill matching
+its name/effect). Owned/licensed for use in this project; not derived from
+the LPC collection above and carries no separate attribution requirement.
+
 ## Regenerating or extending the character sheets
 
 The exact selections used for each class (body/hair/armor/weapon/recolors)

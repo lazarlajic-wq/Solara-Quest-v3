@@ -1,4 +1,11 @@
+import { SKILL_DEFINITIONS } from "@solara/content";
 import { LAYER_MANIFEST_ENTRIES } from "./CharacterLayers";
+
+const SKILL_ICON_MANIFEST_ENTRIES: AssetManifestEntry[] = SKILL_DEFINITIONS.map((skill) => ({
+  key: skill.iconKey,
+  kind: "image" as const,
+  path: `assets/ui/skills/${skill.iconKey}.png`,
+}));
 
 export type AssetKind = "image" | "spritesheet" | "tilemapTiledJSON" | "audio";
 
@@ -51,6 +58,7 @@ export const ASSET_MANIFEST: AssetManifestEntry[] = [
     kind: "tilemapTiledJSON",
     path: "assets/maps/starttown.json",
   },
+  ...SKILL_ICON_MANIFEST_ENTRIES,
 ];
 
 export function getManifestEntry(key: string): AssetManifestEntry {

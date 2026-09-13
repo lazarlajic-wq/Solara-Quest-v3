@@ -45,6 +45,13 @@ export const ENEMY_RESPAWN_MS = 6000;
 
 export const PLAYER_RESPAWN_DELAY_MS = 1200;
 
+// Skill bar (first slice: 3 real active skills per class on keys 1-3 of the
+// spec's 9-slot bar; slots 4-9 exist visually but are empty until more
+// skills are authored). Skills unlock together with the class itself —
+// there's no skill-tree/skill-point spending yet, see
+// docs/gameplay/phase-status.md.
+export const RESOURCE_REGEN_PER_SEC = 5;
+
 // XP required to go from `level` to `level + 1`. No real combat/quest economy
 // yet, so this is a placeholder curve — revisit once more XP sources exist.
 export const xpToNextLevel = (level: number): number => 50 * level;

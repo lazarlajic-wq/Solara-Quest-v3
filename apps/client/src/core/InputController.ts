@@ -12,10 +12,12 @@ export class InputController {
   private shiftKey: Phaser.Input.Keyboard.Key;
   private interactKey: Phaser.Input.Keyboard.Key;
   private attackKey: Phaser.Input.Keyboard.Key;
+  private skillKeys: Phaser.Input.Keyboard.Key[];
 
   private joystickVector: Vector2 = { x: 0, y: 0 };
   private isMobile: boolean;
   private mobileAttackRequested = false;
+  private mobileSkillRequested: number | null = null;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -30,6 +32,11 @@ export class InputController {
     this.shiftKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
     this.interactKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.attackKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.skillKeys = [
+      kb.addKey(Phaser.Input.Keyboard.KeyCodes.ONE),
+      kb.addKey(Phaser.Input.Keyboard.KeyCodes.TWO),
+      kb.addKey(Phaser.Input.Keyboard.KeyCodes.THREE),
+    ];
 
     this.isMobile = !scene.sys.game.device.os.desktop;
     if (this.isMobile) {
@@ -64,6 +71,19 @@ export class InputController {
       return true;
     }
     return false;
+  }
+
+  /** Returns the pressed skill's 1-based bar slot (1-3), or null if none was just pressed. */
+  requestedSkillSlot(): number | null {
+    for (let i = 0; i < this.skillKeys.length; i++) {
+      if (Phaser.Input.Keyboard.JustDown(this.skillKeys[i])) return i + 1;
+    }
+    if (this.mobileSkillRequested !== null) {
+      const slot = this.mobileSkillRequested;
+      this.mobileSkillRequested = null;
+      return slot;
+    }
+    return null;
   }
 
   private createVirtualJoystick(): void {
@@ -118,5 +138,21 @@ export class InputController {
       .setScrollFactor(0)
       .setDepth(1001);
     void attackButton;
+
+    [1, 2, 3].forEach((slot, i) => {
+      const x = scene.scale.width - 90 - (i + 1) * 62;
+      const y = scene.scale.height - 110;
+      scene.add
+        .circle(x, y, 26, 0x8bd3ff, 0.35)
+        .setScrollFactor(0)
+        .setDepth(1000)
+        .setInteractive({ useHandCursor: true })
+        .on("pointerdown", () => (this.mobileSkillRequested = slot));
+      scene.add
+        .text(x, y, String(slot), { fontSize: "18px", color: "#ffffff" })
+        .setOrigin(0.5)
+        .setScrollFactor(0)
+        .setDepth(1001);
+    });
   }
 }

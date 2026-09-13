@@ -19,6 +19,8 @@ export interface ClassDefinition {
   weaponName: string;
 }
 
+export type SkillEffect = "strike" | "nova" | "heal";
+
 export interface SkillDefinition {
   id: SkillId;
   classId: ClassId;
@@ -29,8 +31,20 @@ export interface SkillDefinition {
   levelRequirement: number;
   skillPointCost: number;
   requires?: SkillId[];
-  resourceCost?: number;
-  cooldownMs?: number;
+  resourceCost: number;
+  cooldownMs: number;
+  /** Slot 1-3 on the class's portion of the skill bar (spec's 1-9 bar, keys 1-3 in this first slice). */
+  barSlot: number;
+  iconKey: string;
+  effect: SkillEffect;
+  /** "strike"/"nova": multiplies ClassDefinition.baseStats.attack for damage. "heal": ignored. */
+  damageMultiplier?: number;
+  /** "strike": distance from the player the hit point is placed, in the facing direction. */
+  range?: number;
+  /** "strike": radius around the hit point. "nova": radius around the player. */
+  radius?: number;
+  /** "heal": flat HP restored. */
+  healAmount?: number;
 }
 
 export interface ItemDefinition {

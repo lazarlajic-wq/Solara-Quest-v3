@@ -8,10 +8,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const clientPublic = resolve(__dirname, "../../apps/client/public");
 const manifestPath = resolve(__dirname, "../../apps/client/src/core/AssetManifest.ts");
 const layersPath = resolve(__dirname, "../../apps/client/src/core/CharacterLayers.ts");
+const skillsPath = resolve(__dirname, "../../packages/content/src/skills.ts");
 
 const readFile = (p) => import("node:fs/promises").then((fs) => fs.readFile(p, "utf-8"));
 const source = await readFile(manifestPath);
 const layersSource = await readFile(layersPath);
+const skillsSource = await readFile(skillsPath);
 
 // Lightweight extraction (no TS build step required here): pull key/path pairs
 // out of the manifest source with a regex rather than requiring ts-node.
@@ -79,6 +81,14 @@ for (const gender of ["male", "female"]) {
 }
 for (const classId of classesWithOutfit) {
   checkEntry(`layer_outfit_class_${classId}`, `assets/characters/layers/outfit/${classId}.png`);
+}
+
+// SKILL_DEFINITIONS also builds its manifest entries programmatically
+// (AssetManifest.ts maps over the imported array), so mirror it here too:
+// pull every iconKey out of skills.ts and check the matching PNG exists.
+const skillIconKeys = [...skillsSource.matchAll(/iconKey:\s*"([^"]+)"/g)].map((m) => m[1]);
+for (const key of skillIconKeys) {
+  checkEntry(key, `assets/ui/skills/${key}.png`);
 }
 
 if (seenKeys.size === 0) {

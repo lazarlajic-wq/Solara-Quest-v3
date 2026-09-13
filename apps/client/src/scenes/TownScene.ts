@@ -1,7 +1,18 @@
 import Phaser from "phaser";
 import { getClassDefinition } from "@solara/content";
 import { CLASS_UNLOCK_LEVEL } from "@solara/shared";
-import { DEFAULT_ATTACK_DAMAGE, DUMMY_XP_REWARD, PLAYER_ATTACK_HIT_RADIUS, STORAGE_KEYS, xpToNextLevel } from "../config";
+import {
+  DEFAULT_ATTACK_DAMAGE,
+  DUMMY_XP_REWARD,
+  ENEMY_DAMAGE,
+  ENEMY_XP_REWARD,
+  PLAYER_ATTACK_HIT_RADIUS,
+  PLAYER_RESPAWN_DELAY_MS,
+  STORAGE_KEYS,
+  xpToNextLevel,
+} from "../config";
+import type { Damageable } from "../entities/Damageable";
+import { Enemy } from "../entities/Enemy";
 import { InputController } from "../core/InputController";
 import { addXp, debugLevelUp, loadProgress, type PlayerProgress } from "../core/PlayerProgress";
 import { Player } from "../entities/Player";
@@ -17,10 +28,11 @@ const DEFAULT_HEALTH = 100;
  * the authored spawn point, and hooks up NPC/portal interaction — a real,
  * fully-integrated map rather than a disconnected demo (spec section 41).
  *
- * Also carries the Phase 3 first combat slice: a melee attack against
- * training dummies that grants real XP/levels (see PlayerProgress.ts) —
- * skills, resource spending, and real enemies are still future work (see
- * docs/gameplay/phase-status.md).
+ * Also carries the Phase 3 combat slice: a melee attack against training
+ * dummies (harmless XP piñatas) and real enemies (leashed-aggro slimes that
+ * damage the player back and can defeat them) — see
+ * docs/gameplay/phase-status.md for what's still missing (skills, resource
+ * spending, real enemy art).
  */
 export class TownScene extends Phaser.Scene {
   private player!: Player;
@@ -28,8 +40,13 @@ export class TownScene extends Phaser.Scene {
   private hud!: HUD;
   private interactables: Phaser.GameObjects.Zone[] = [];
   private dummies: TrainingDummy[] = [];
+  private enemies: Enemy[] = [];
   private character!: SavedCharacter;
   private progress!: PlayerProgress;
+  private playerHp = 0;
+  private playerMaxHp = 0;
+  private playerDefeated = false;
+  private spawnPoint = { x: 100, y: 100 };
 
   constructor() {
     super("Town");
@@ -55,17 +72,20 @@ export class TownScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
     const spawn = map.findObject("spawns", (o) => o.name === "player_spawn");
-    this.player = new Player(this, spawn?.x ?? 100, spawn?.y ?? 100, character.appearance, character.classId);
+    this.spawnPoint = { x: spawn?.x ?? 100, y: spawn?.y ?? 100 };
+    this.player = new Player(this, this.spawnPoint.x, this.spawnPoint.y, character.appearance, character.classId);
     this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
 
     this.setupCollision(map);
     this.setupInteractables(map);
     this.setupDummies(map);
+    this.setupEnemies(map);
 
     this.input_ = new InputController(this);
     this.hud = new HUD(this);
-    const health = character.classId ? getClassDefinition(character.classId).baseStats.health : DEFAULT_HEALTH;
-    this.hud.setHealth(health, health);
+    this.playerMaxHp = character.classId ? getClassDefinition(character.classId).baseStats.health : DEFAULT_HEALTH;
+    this.playerHp = this.playerMaxHp;
+    this.hud.setHealth(this.playerHp, this.playerMaxHp);
     this.hud.setSolaris(0);
     this.updateLevelHud();
     this.hud.showToast(`Willkommen, ${character.name} (Level ${this.progress.level})`);
@@ -81,6 +101,7 @@ export class TownScene extends Phaser.Scene {
 
   override update(time: number): void {
     this.player.update(this.input_, time);
+    for (const enemy of this.enemies) enemy.update(time, { x: this.player.x, y: this.player.y });
     this.checkInteractions();
     this.checkAttack(time);
   }
@@ -133,6 +154,25 @@ export class TownScene extends Phaser.Scene {
     }
   }
 
+  private setupEnemies(map: Phaser.Tilemaps.Tilemap): void {
+    const spawns = map.getObjectLayer("spawns");
+    if (!spawns) return;
+    for (const obj of spawns.objects) {
+      if (obj.type !== "enemy") continue;
+      const w = obj.width ?? 0;
+      const h = obj.height ?? 0;
+      const enemy = new Enemy(
+        this,
+        (obj.x ?? 0) + w / 2,
+        (obj.y ?? 0) + h / 2,
+        () => this.onEnemyDefeated(),
+        () => this.damagePlayer(),
+      );
+      this.enemies.push(enemy);
+      this.physics.add.collider(this.player, enemy);
+    }
+  }
+
   private checkInteractions(): void {
     if (!this.input_.isInteractPressed()) return;
     for (const zone of this.interactables) {
@@ -154,19 +194,49 @@ export class TownScene extends Phaser.Scene {
     if (!point) return;
 
     const damage = this.character.classId ? getClassDefinition(this.character.classId).baseStats.attack : DEFAULT_ATTACK_DAMAGE;
-    for (const dummy of this.dummies) {
-      if (!dummy.isAlive()) continue;
-      if (Phaser.Math.Distance.Between(point.x, point.y, dummy.x, dummy.y) <= PLAYER_ATTACK_HIT_RADIUS) {
-        dummy.takeDamage(damage);
+    const targets: Damageable[] = [...this.dummies, ...this.enemies];
+    for (const target of targets) {
+      if (!target.isAlive()) continue;
+      if (Phaser.Math.Distance.Between(point.x, point.y, target.x, target.y) <= PLAYER_ATTACK_HIT_RADIUS) {
+        target.takeDamage(damage);
       }
     }
   }
 
-  private onDummyDefeated(): void {
-    const { progress, levelsGained } = addXp(DUMMY_XP_REWARD);
+  private grantXp(amount: number, source: string): void {
+    const { progress, levelsGained } = addXp(amount);
     this.progress = progress;
     this.updateLevelHud();
-    this.hud.showToast(levelsGained > 0 ? `+${DUMMY_XP_REWARD} XP — Level aufgestiegen! Jetzt Level ${progress.level}` : `+${DUMMY_XP_REWARD} XP`);
+    this.hud.showToast(
+      levelsGained > 0 ? `${source}: +${amount} XP — Level aufgestiegen! Jetzt Level ${progress.level}` : `${source}: +${amount} XP`,
+    );
+  }
+
+  private onDummyDefeated(): void {
+    this.grantXp(DUMMY_XP_REWARD, "Trainingsdummy besiegt");
+  }
+
+  private onEnemyDefeated(): void {
+    this.grantXp(ENEMY_XP_REWARD, "Gegner besiegt");
+  }
+
+  private damagePlayer(): void {
+    if (this.playerDefeated) return;
+    this.playerHp = Math.max(0, this.playerHp - ENEMY_DAMAGE);
+    this.hud.setHealth(this.playerHp, this.playerMaxHp);
+    if (this.playerHp === 0) this.onPlayerDefeated();
+  }
+
+  private onPlayerDefeated(): void {
+    this.playerDefeated = true;
+    this.hud.showToast("Du wurdest besiegt — zurück zum Dorfplatz.");
+    this.player.body.setVelocity(0, 0);
+    this.time.delayedCall(PLAYER_RESPAWN_DELAY_MS, () => {
+      this.player.setPosition(this.spawnPoint.x, this.spawnPoint.y);
+      this.playerHp = this.playerMaxHp;
+      this.hud.setHealth(this.playerHp, this.playerMaxHp);
+      this.playerDefeated = false;
+    });
   }
 
   private updateLevelHud(): void {

@@ -70,7 +70,7 @@ const map = {
   type: "map",
   version: "1.10",
   nextlayerid: 5,
-  nextobjectid: 12,
+  nextobjectid: 14,
   tilesets: [
     {
       firstgid: 1,
@@ -142,6 +142,24 @@ const map = {
           type: "dummy",
           x: 20 * TILE,
           y: 12 * TILE,
+          width: TILE,
+          height: TILE,
+        },
+        {
+          id: 7,
+          name: "enemy_slime_1",
+          type: "enemy",
+          x: 6 * TILE,
+          y: 3 * TILE,
+          width: TILE,
+          height: TILE,
+        },
+        {
+          id: 8,
+          name: "enemy_slime_2",
+          type: "enemy",
+          x: 25 * TILE,
+          y: 17 * TILE,
           width: TILE,
           height: TILE,
         },

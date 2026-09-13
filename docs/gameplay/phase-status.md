@@ -81,17 +81,32 @@ Done:
   The XP curve (`xpToNextLevel` in `config.ts`) is a placeholder — there's
   no quest/other XP source yet to calibrate against.
 - HUD now shows level + an XP progress bar alongside HP/Solaris.
+- **Real enemies that hurt back** (`apps/client/src/entities/Enemy.ts`): two
+  slimes with leashed-aggro AI — idle near their spawn point, chase the
+  player within `ENEMY_AGGRO_RANGE`, attack on cooldown once in
+  `ENEMY_ATTACK_RANGE`, and give up and walk home if led more than
+  `ENEMY_LEASH_RANGE` from spawn. They deal `ENEMY_DAMAGE` to the player's
+  HP (tracked in `TownScene`, not yet on `Player` itself), grant
+  `ENEMY_XP_REWARD` on defeat, and respawn after `ENEMY_RESPAWN_MS`. Same
+  "obviously placeholder" art approach as the training dummy (a procedurally
+  drawn slime blob).
+- **Player death/respawn**: HP hitting 0 shows a toast and teleports the
+  player back to `player_spawn` with full HP after `PLAYER_RESPAWN_DELAY_MS`
+  — no penalty (XP/Solaris loss, invulnerability window) yet.
 
 Not done:
 - No skill tree, skill bar, or resource (mana/energy) spending —
   `baseStats.resource`/`resourceType` still aren't consumed anywhere. This
   is the next natural slice on top of today's combat loop.
-- No real enemies (only the training dummy), no damage taken by the player,
-  no death/respawn for the player, no combat outside the start town.
+- `baseStats.defense` still isn't consumed — enemy damage is a flat
+  `ENEMY_DAMAGE` regardless of the defending class's defense stat.
 - No attack animation — the swing is a small scale-pulse tween on the
   character sprite, not a real animation (see Phase 2's "Known gaps": LPC's
   slash/attack frames aren't extracted yet, and pairing them per class
-  weapon is still open).
+  weapon is still open). Enemies don't have a walk/attack animation either
+  (single static frame, moved via velocity).
+- Combat is confined to the start town (only map that exists) — no dedicated
+  training grounds or wilderness area yet (see Phase 4).
 
 ## Phase 4 — Erste Region: SLICE ONLY
 
@@ -138,8 +153,11 @@ WASD/arrows to move (8-direction, diagonal not faster), Shift to dash, E near
 the NPC by the plaza entrance to talk, try walking into the west river to see
 collision. Walk up to one of the two training dummies in the plaza and press
 Space repeatedly to attack — watch its HP bar drop, then its XP/level-up
-toast and the HUD's level/XP bar once it's defeated. After enough dummy
-kills to reach Level 5 (or, faster, the dev-only `K` debug key), talk to the
-NPC again to unlock class selection; picking a class swaps only your
+toast and the HUD's level/XP bar once it's defeated. Venture to the map's
+corners to find the two slimes: get close enough and they'll chase and hit
+back (watch your HP drop in the HUD); let one drop your HP to 0 to see the
+death/respawn-at-town toast, or fight back to defeat one for XP. After
+enough kills to reach Level 5 (or, faster, the dev-only `K` debug key), talk
+to the NPC again to unlock class selection; picking a class swaps only your
 equipment (and recalculates HP from `baseStats`), not your designed
 character.

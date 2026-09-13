@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { DUMMY_MAX_HP, DUMMY_RESPAWN_MS } from "../config";
+import type { Damageable } from "./Damageable";
 
 const TEXTURE_KEY = "placeholder_training_dummy";
 
@@ -9,7 +10,7 @@ const TEXTURE_KEY = "placeholder_training_dummy";
  * deliberately obvious placeholder (a straw target on a post) rather than a
  * disguised reused asset, so it reads honestly as "not final art" in-game.
  */
-export class TrainingDummy extends Phaser.GameObjects.Container {
+export class TrainingDummy extends Phaser.GameObjects.Container implements Damageable {
   private hp: number;
   private readonly maxHp: number;
   private readonly hpBarBg: Phaser.GameObjects.Rectangle;

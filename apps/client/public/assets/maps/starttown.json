@@ -11,7 +11,7 @@
   "type": "map",
   "version": "1.10",
   "nextlayerid": 5,
-  "nextobjectid": 12,
+  "nextobjectid": 14,
   "tilesets": [
     {
       "firstgid": 1,
@@ -1337,6 +1337,24 @@
           "type": "dummy",
           "x": 1700,
           "y": 1020,
+          "width": 85,
+          "height": 85
+        },
+        {
+          "id": 7,
+          "name": "enemy_slime_1",
+          "type": "enemy",
+          "x": 510,
+          "y": 255,
+          "width": 85,
+          "height": 85
+        },
+        {
+          "id": 8,
+          "name": "enemy_slime_2",
+          "type": "enemy",
+          "x": 2125,
+          "y": 1445,
           "width": 85,
           "height": 85
         }

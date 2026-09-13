@@ -1,3 +1,5 @@
+import { LAYER_MANIFEST_ENTRIES } from "./CharacterLayers";
+
 export type AssetKind = "image" | "spritesheet" | "tilemapTiledJSON" | "audio";
 
 export interface SpriteSheetFrameConfig {
@@ -26,40 +28,14 @@ export const ASSET_MANIFEST: AssetManifestEntry[] = [
     kind: "image",
     path: "assets/tilesets/starttown.png",
   },
-  // Character sheets composed with the Universal LPC Spritesheet Generator
-  // (Liberated Pixel Cup) — see docs/art-direction/CREDITS.md for the
-  // required attribution. Each is a 8-col x 4-row grid of 128x128 frames:
-  // rows are south/north/east/west walk cycles, 8 frames each.
-  {
-    key: "char_swordsman",
-    kind: "spritesheet",
-    path: "assets/characters/swordsman-directional.png",
-    frameConfig: { frameWidth: 128, frameHeight: 128 },
-  },
-  {
-    key: "char_tank",
-    kind: "spritesheet",
-    path: "assets/characters/tank-directional.png",
-    frameConfig: { frameWidth: 128, frameHeight: 128 },
-  },
-  {
-    key: "char_mage",
-    kind: "spritesheet",
-    path: "assets/characters/mage-directional.png",
-    frameConfig: { frameWidth: 128, frameHeight: 128 },
-  },
-  {
-    key: "char_archer",
-    kind: "spritesheet",
-    path: "assets/characters/archer-directional.png",
-    frameConfig: { frameWidth: 128, frameHeight: 128 },
-  },
-  {
-    key: "char_assassin",
-    kind: "spritesheet",
-    path: "assets/characters/assassin-directional.png",
-    frameConfig: { frameWidth: 128, frameHeight: 128 },
-  },
+  // Layered character art composed with the Universal LPC Spritesheet
+  // Generator (Liberated Pixel Cup) — see docs/art-direction/CREDITS.md for
+  // the required attribution. Every layer is an 8-col x 4-row grid of
+  // 128x128 frames (rows: south/north/east/west walk cycles, 8 frames each)
+  // sharing the same coordinate system, so any combination can be stacked
+  // at runtime — see apps/client/src/entities/CharacterSprite.ts and
+  // docs/art-direction/style-guide.md for the full option list.
+  ...LAYER_MANIFEST_ENTRIES,
   {
     key: "icon_heart",
     kind: "image",

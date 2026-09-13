@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { GAME_HEIGHT, GAME_WIDTH } from "./config";
 import { BootScene } from "./scenes/BootScene";
 import { CharacterCreateScene } from "./scenes/CharacterCreateScene";
+import { ClassSelectScene } from "./scenes/ClassSelectScene";
 import { TownScene } from "./scenes/TownScene";
 
 export function createGame(parent: HTMLElement): Phaser.Game {
@@ -20,6 +21,6 @@ export function createGame(parent: HTMLElement): Phaser.Game {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [BootScene, CharacterCreateScene, TownScene],
+    scene: [BootScene, CharacterCreateScene, TownScene, ClassSelectScene],
   });
 }

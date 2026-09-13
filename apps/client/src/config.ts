@@ -22,4 +22,5 @@ export const SKILL_BAR_SLOT_COUNT = 9;
 export const STORAGE_KEYS = {
   character: "solara.character.v1",
   settings: "solara.settings.v1",
+  progress: "solara.progress.v1",
 } as const;

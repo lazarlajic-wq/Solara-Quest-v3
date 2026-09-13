@@ -1,11 +1,13 @@
 import Phaser from "phaser";
-import { getClassDefinition } from "@solara/content";
+import { CLASS_UNLOCK_LEVEL } from "@solara/shared";
 import { STORAGE_KEYS } from "../config";
-import { createCharacterAnimations } from "../core/CharacterAnimations";
 import { InputController } from "../core/InputController";
+import { debugLevelUp, loadProgress, type PlayerProgress } from "../core/PlayerProgress";
 import { Player } from "../entities/Player";
 import { HUD } from "../ui/HUD";
 import type { SavedCharacter } from "./CharacterCreateScene";
+
+const DEFAULT_HEALTH = 100;
 
 /**
  * Phase 4 playable slice: the Solara Coast start town. Loads the Tiled map,
@@ -18,6 +20,8 @@ export class TownScene extends Phaser.Scene {
   private input_!: InputController;
   private hud!: HUD;
   private interactables: Phaser.GameObjects.Zone[] = [];
+  private character!: SavedCharacter;
+  private progress!: PlayerProgress;
 
   constructor() {
     super("Town");
@@ -29,6 +33,8 @@ export class TownScene extends Phaser.Scene {
       this.scene.start("CharacterCreate");
       return;
     }
+    this.character = character;
+    this.progress = loadProgress();
 
     const map = this.make.tilemap({ key: "map_starttown" });
     const tileset = map.addTilesetImage("starttown", "tileset_starttown")!;
@@ -40,11 +46,8 @@ export class TownScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
-    const classDef = getClassDefinition(character.classId);
-    createCharacterAnimations(this.anims, classDef.spriteSheetKey);
-
     const spawn = map.findObject("spawns", (o) => o.name === "player_spawn");
-    this.player = new Player(this, spawn?.x ?? 100, spawn?.y ?? 100, classDef);
+    this.player = new Player(this, spawn?.x ?? 100, spawn?.y ?? 100, character.appearance, character.classId);
     this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
 
     this.setupCollision(map);
@@ -52,9 +55,16 @@ export class TownScene extends Phaser.Scene {
 
     this.input_ = new InputController(this);
     this.hud = new HUD(this);
-    this.hud.setHealth(classDef.baseStats.health, classDef.baseStats.health);
+    this.hud.setHealth(DEFAULT_HEALTH, DEFAULT_HEALTH);
     this.hud.setSolaris(0);
-    this.hud.showToast(`Willkommen, ${character.name} (${classDef.name})`);
+    this.hud.showToast(`Willkommen, ${character.name} (Level ${this.progress.level})`);
+
+    if (import.meta.env.DEV) {
+      this.input.keyboard!.on("keydown-K", () => {
+        this.progress = debugLevelUp();
+        this.hud.showToast(`[Debug] Level ${this.progress.level} erreicht`);
+      });
+    }
   }
 
   override update(time: number): void {
@@ -105,12 +115,26 @@ export class TownScene extends Phaser.Scene {
       const dist = Phaser.Math.Distance.Between(zone.x, zone.y, this.player.x, this.player.y);
       if (dist < 70) {
         if (zone.getData("type") === "npc") {
-          this.hud.showToast(`${zone.getData("name")}: "Willkommen in der Startstadt. Das Trainingslager wartet."`);
+          this.handleNpcInteraction(zone);
         } else if (zone.getData("type") === "portal") {
           this.hud.showToast("Diese Region ist noch nicht gebaut — kommt in einer späteren Phase.");
         }
         return;
       }
     }
+  }
+
+  private handleNpcInteraction(zone: Phaser.GameObjects.Zone): void {
+    if (this.character.classId === null) {
+      if (this.progress.level >= CLASS_UNLOCK_LEVEL) {
+        this.scene.start("ClassSelect", { character: this.character });
+        return;
+      }
+      this.hud.showToast(
+        `${zone.getData("name")}: "Erreiche Level ${CLASS_UNLOCK_LEVEL}, dann zeige ich dir deine Klasse." (Level ${this.progress.level}/${CLASS_UNLOCK_LEVEL})`,
+      );
+      return;
+    }
+    this.hud.showToast(`${zone.getData("name")}: "Willkommen in der Startstadt. Das Trainingslager wartet."`);
   }
 }

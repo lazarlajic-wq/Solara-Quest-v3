@@ -15,20 +15,33 @@ whenever a phase's scope changes.
   stable IDs and duplicate-ID detection (`registerId`).
 - Asset path validator (`npm run validate:assets`).
 
-## Phase 2 — Referenzcharakter: PARTIAL (art quality bar met)
+## Phase 2 — Referenzcharakter: PARTIAL (art quality bar met, real character creation)
 
 Done:
-- Character creation scene (name + class selection, all 5 classes genuinely
-  selectable and playable, each with a real animated preview sprite).
-- **All five classes have real, distinct, style-consistent art** — 4-direction
-  (south/north/east/west) walk cycles composed with the Universal LPC
-  Spritesheet Generator, replacing the earlier single-pose/tinted
-  placeholders. See `docs/art-direction/CREDITS.md` (attribution required)
-  and `docs/art-direction/style-guide.md` (exact selections, how to
-  reproduce/extend).
+- **Real character creation**: the player designs gender, skin tone, eye
+  color, hairstyle + color, and beard + color themselves (spec section 6),
+  rendered live via runtime-layered LPC art (body/beard/hair/outfit as
+  independent stacked sprites sharing one frame index) — see
+  `apps/client/src/entities/CharacterSprite.ts` and
+  `docs/art-direction/style-guide.md`. A curated subset of LPC's options is
+  wired up so far (2 skin tones, 2 eye colors, 2 hairstyles x 2 colors, 1
+  beard style x 2 colors); more are a mechanical addition, documented in the
+  style guide. Facial scars were requested but don't exist in this LPC
+  catalog and aren't implemented.
+- **Class choice moved to `CLASS_UNLOCK_LEVEL` (5)**: everyone starts in the
+  same neutral brown leather outfit; class is chosen later via the new
+  `ClassSelectScene`, which only swaps the equipment layer on top of the
+  player's designed character — the body/hair/face they made persists.
+  Reachable by talking to the town NPC once the level requirement is met.
+- **Level tracking is a stub**: `apps/client/src/core/PlayerProgress.ts`
+  stores a `level` in localStorage; there's no XP/combat yet (Phase 3), so
+  the only way to level up today is a dev-only debug key (`K` in
+  `TownScene`, gated by `import.meta.env.DEV`). Replace with real XP once
+  combat exists — the storage shape and the `CLASS_UNLOCK_LEVEL` check
+  don't need to change.
 - 4-direction-aware movement/animation, no mirroring needed
   (`vectorToDirection`, `normalizeMovement`, diagonal speed normalized,
-  diagonals collapse to nearest cardinal).
+  diagonals collapse to nearest cardinal), now driving every layer in sync.
 - Desktop controls (WASD/arrows, Shift dash, E interact) and a basic mobile
   virtual joystick.
 - Camera, world bounds, tile collision.
@@ -36,14 +49,9 @@ Done:
 Not done / known gap:
 - True 8-direction diagonal art (currently diagonals reuse the nearest
   cardinal — see `AUTHORED_DIRECTIONS` in `packages/shared/src/direction.ts`).
-- Visible equipment layering as separate swappable layers at runtime is not
-  implemented — each class is one baked-together sheet from the generator
-  rather than live body+armor+weapon layers. Re-running the generator with
-  different gear produces a new baked sheet; true runtime layering (for
-  showing looted equipment on the player) is future work.
-- Character customization (skin/eye color, hairstyle, scars, etc.) is not
-  exposed in the creation screen yet — only name + class. The generator
-  supports all of this per-layer; only each class's preset is used today.
+- Only a curated slice of LPC's customization catalog is wired up (see
+  style guide) — more skin tones/hairstyles/colors/beards are a drop-in
+  extension, not a redesign.
 - Attack/hurt/death animations aren't wired yet — only idle/walk are
   exercised by the current Player state machine. The LPC catalog has these
   (`slash`, `hurt`, ...) but pairing them per class/weapon is a Phase 3
@@ -94,7 +102,10 @@ npm run validate:assets
 npm run dev   # then open the printed localhost URL
 ```
 
-Character creation → pick any class, enter a name (2+ chars) → start town.
+Character creation → design your look (gender/skin/eyes/hair/beard), enter a
+name (2+ chars) → start town wearing the neutral leather starter outfit.
 WASD/arrows to move (8-direction, diagonal not faster), Shift to dash, E near
 the NPC by the plaza entrance to talk, try walking into the west river to see
-collision.
+collision. In dev mode, press `K` a few times to level up (stub — see Phase
+2), then talk to the NPC again to unlock class selection at Level 5; picking
+a class swaps only your equipment, not your designed character.

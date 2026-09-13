@@ -15,7 +15,7 @@ const DIRECTIONAL_ROW: Record<"south" | "north" | "east" | "west", number> = {
   west: 3,
 };
 
-/** Registers idle/walk animations for one character texture key (e.g. "char_swordsman"). */
+/** Registers idle/walk animations for one character layer texture key (e.g. "layer_base_male_light_brown"). */
 export function createCharacterAnimations(anims: Phaser.Animations.AnimationManager, textureKey: string): void {
   const def = (animKey: string, frames: number[], frameRate: number, repeat: number) => {
     if (anims.exists(animKey)) return;

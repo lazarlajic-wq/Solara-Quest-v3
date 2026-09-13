@@ -1,32 +1,44 @@
 import Phaser from "phaser";
-import { normalizeMovement, vectorToDirection, type Direction } from "@solara/shared";
-import type { ClassDefinition } from "@solara/shared";
+import { normalizeMovement, vectorToDirection, type CharacterAppearance, type ClassId, type Direction } from "@solara/shared";
 import { PLAYER_DASH_COOLDOWN_MS, PLAYER_DASH_DURATION_MS, PLAYER_DASH_SPEED, PLAYER_WALK_SPEED } from "../config";
-import { characterAnimKey } from "../core/CharacterAnimations";
+import { CharacterSprite } from "./CharacterSprite";
 import { InputController } from "../core/InputController";
 
 type PlayerState = "idle" | "walk" | "dash" | "attack" | "hit" | "death";
 
-export class Player extends Phaser.Physics.Arcade.Sprite {
-  readonly classDefinition: ClassDefinition;
+export class Player extends Phaser.GameObjects.Container {
+  readonly appearance: CharacterAppearance;
+  classId: ClassId | null;
   facing: Direction = "south";
+  declare body: Phaser.Physics.Arcade.Body;
 
+  private readonly characterSprite: CharacterSprite;
   private movementState: PlayerState = "idle";
   private dashingUntil = 0;
   private dashReadyAt = 0;
   private dashVector = { x: 0, y: 1 };
 
-  constructor(scene: Phaser.Scene, x: number, y: number, classDefinition: ClassDefinition) {
-    super(scene, x, y, classDefinition.spriteSheetKey, 0);
-    this.classDefinition = classDefinition;
+  constructor(scene: Phaser.Scene, x: number, y: number, appearance: CharacterAppearance, classId: ClassId | null) {
+    super(scene, x, y);
+    this.appearance = appearance;
+    this.classId = classId;
+
+    this.characterSprite = new CharacterSprite(scene, 0, 0, appearance, classId);
+    this.add(this.characterSprite);
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.setCollideWorldBounds(true);
-    this.setSize(48, 40);
-    this.setOffset(40, 80);
+    this.body.setSize(48, 40);
+    this.body.setOffset(40, 80);
+    this.body.setCollideWorldBounds(true);
     this.setDepth(10);
-    this.play(characterAnimKey(classDefinition.spriteSheetKey, "idle", "south"));
+    this.characterSprite.playState("idle", "south");
+  }
+
+  /** Applies a class's equipment look once chosen (see CLASS_UNLOCK_LEVEL). */
+  setClass(classId: ClassId): void {
+    this.classId = classId;
+    this.characterSprite.setClass(classId);
   }
 
   override update(input: InputController, time: number): void {
@@ -49,15 +61,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (this.movementState === "dash") {
-      this.setVelocity(this.dashVector.x * PLAYER_DASH_SPEED, this.dashVector.y * PLAYER_DASH_SPEED);
+      this.body.setVelocity(this.dashVector.x * PLAYER_DASH_SPEED, this.dashVector.y * PLAYER_DASH_SPEED);
       if (now >= this.dashingUntil) this.movementState = moving ? "walk" : "idle";
     } else if (moving) {
       const n = normalizeMovement(raw);
-      this.setVelocity(n.x * PLAYER_WALK_SPEED, n.y * PLAYER_WALK_SPEED);
+      this.body.setVelocity(n.x * PLAYER_WALK_SPEED, n.y * PLAYER_WALK_SPEED);
       this.dashVector = n;
       this.movementState = "walk";
     } else {
-      this.setVelocity(0, 0);
+      this.body.setVelocity(0, 0);
       this.movementState = "idle";
     }
 
@@ -66,7 +78,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private applyAnimation(): void {
     const state = this.movementState === "walk" || this.movementState === "dash" ? "walk" : "idle";
-    const key = characterAnimKey(this.classDefinition.spriteSheetKey, state, this.facing);
-    if (this.anims.currentAnim?.key !== key) this.play(key);
+    this.characterSprite.playState(state, this.facing);
   }
 }

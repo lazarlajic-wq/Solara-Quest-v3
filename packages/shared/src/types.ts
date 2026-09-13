@@ -16,9 +16,6 @@ export interface ClassDefinition {
     speed: number;
   };
   resourceType: "mana" | "energy";
-  /** Direction the reference art currently exists for; see AUTHORED_DIRECTIONS. */
-  hasFullArt: boolean;
-  spriteSheetKey: string;
   weaponName: string;
 }
 
@@ -105,6 +102,33 @@ export interface PetEvolution {
   requiredLevel: number;
   spriteSheetKey: string;
 }
+
+export type Gender = "male" | "female";
+export type SkinTone = "light" | "brown";
+export type EyeColor = "brown" | "blue";
+export type HairStyle = "plain" | "ponytail";
+export type HairColor = "black" | "dark_brown";
+export type BeardStyle = "none" | "trimmed";
+
+/**
+ * The player-designed look (spec section 6: modular character creation),
+ * independent of class. Rendered as stacked sprite layers sharing one
+ * animation frame index — see apps/client/src/entities/CharacterSprite.ts.
+ * Class equipment is a separate "outfit" layer applied on top once
+ * CLASS_UNLOCK_LEVEL is reached, so the designed body/hair/face persists.
+ */
+export interface CharacterAppearance {
+  gender: Gender;
+  skinTone: SkinTone;
+  eyeColor: EyeColor;
+  hairStyle: HairStyle;
+  hairColor: HairColor;
+  beardStyle: BeardStyle;
+  beardColor: HairColor;
+}
+
+/** Level at which a class (and its equipment look) becomes chooseable. */
+export const CLASS_UNLOCK_LEVEL = 5;
 
 export interface AnimationDefinition {
   id: AnimationId;

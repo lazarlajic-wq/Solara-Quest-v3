@@ -104,11 +104,11 @@ export interface PetEvolution {
 }
 
 export type Gender = "male" | "female";
-export type SkinTone = "light" | "brown";
-export type EyeColor = "brown" | "blue";
-export type HairStyle = "plain" | "ponytail";
-export type HairColor = "black" | "dark_brown";
-export type BeardStyle = "none" | "trimmed";
+export type SkinTone = "light" | "amber" | "olive" | "brown";
+export type EyeColor = "brown" | "blue" | "green" | "gray" | "purple";
+export type HairStyle = "plain" | "ponytail" | "bob" | "long" | "curly";
+export type HairColor = "black" | "dark_brown" | "blonde" | "red" | "gray";
+export type BeardStyle = "none" | "trimmed" | "basic" | "medium" | "mustache" | "winter";
 
 /**
  * The player-designed look (spec section 6: modular character creation),

@@ -24,10 +24,10 @@ Done:
   independent stacked sprites sharing one frame index) — see
   `apps/client/src/entities/CharacterSprite.ts` and
   `docs/art-direction/style-guide.md`. A curated subset of LPC's options is
-  wired up so far (2 skin tones, 2 eye colors, 2 hairstyles x 2 colors, 1
-  beard style x 2 colors); more are a mechanical addition, documented in the
-  style guide. Facial scars were requested but don't exist in this LPC
-  catalog and aren't implemented.
+  wired up so far (4 skin tones, 5 eye colors, 5 hairstyles x 5 colors, 5
+  beard styles x 5 colors, all independently combinable); more are a
+  mechanical addition, documented in the style guide. Facial scars were
+  requested but don't exist in this LPC catalog and aren't implemented.
 - **Class choice moved to `CLASS_UNLOCK_LEVEL` (5)**: everyone starts in the
   same neutral brown leather outfit; class is chosen later via the new
   `ClassSelectScene`, which only swaps the equipment layer on top of the

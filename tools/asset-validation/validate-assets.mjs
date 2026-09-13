@@ -57,11 +57,12 @@ const beardStyles = stringArray("AVAILABLE_BEARD_STYLES").filter((s) => s !== "n
 const classesWithOutfit = stringArray("CLASSES_WITH_OUTFIT_LAYER");
 
 for (const skin of skinTones) {
-  for (const eye of eyeColors) {
-    for (const gender of ["male", "female"]) {
-      checkEntry(`layer_base_${gender}_${skin}_${eye}`, `assets/characters/layers/base/${gender}_${skin}_${eye}.png`);
-    }
+  for (const gender of ["male", "female"]) {
+    checkEntry(`layer_base_${gender}_${skin}`, `assets/characters/layers/base/${gender}_${skin}.png`);
   }
+}
+for (const eye of eyeColors) {
+  checkEntry(`layer_eye_${eye}`, `assets/characters/layers/eyes/${eye}.png`);
 }
 for (const style of hairStyles) {
   for (const color of hairColors) {

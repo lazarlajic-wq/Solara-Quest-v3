@@ -29,11 +29,18 @@ export interface SavedCharacter {
 const GENDERS: Gender[] = ["male", "female"];
 
 const GENDER_LABELS: Record<Gender, string> = { male: "Männlich", female: "Weiblich" };
-const SKIN_LABELS: Record<SkinTone, string> = { light: "Hell", brown: "Dunkel" };
-const EYE_LABELS: Record<EyeColor, string> = { brown: "Braun", blue: "Blau" };
-const HAIR_STYLE_LABELS: Record<HairStyle, string> = { plain: "Kurz", ponytail: "Zopf" };
-const HAIR_COLOR_LABELS: Record<HairColor, string> = { black: "Schwarz", dark_brown: "Dunkelbraun" };
-const BEARD_STYLE_LABELS: Record<BeardStyle, string> = { none: "Kein Bart", trimmed: "Gestutzt" };
+const SKIN_LABELS: Record<SkinTone, string> = { light: "Hell", amber: "Bernstein", olive: "Oliv", brown: "Dunkel" };
+const EYE_LABELS: Record<EyeColor, string> = { brown: "Braun", blue: "Blau", green: "Grün", gray: "Grau", purple: "Lila" };
+const HAIR_STYLE_LABELS: Record<HairStyle, string> = { plain: "Kurz", ponytail: "Zopf", bob: "Bob", long: "Lang", curly: "Lockig" };
+const HAIR_COLOR_LABELS: Record<HairColor, string> = { black: "Schwarz", dark_brown: "Dunkelbraun", blonde: "Blond", red: "Rot", gray: "Grau" };
+const BEARD_STYLE_LABELS: Record<BeardStyle, string> = {
+  none: "Kein Bart",
+  trimmed: "Gestutzt",
+  basic: "Vollbart",
+  medium: "Mittellang",
+  mustache: "Schnurrbart",
+  winter: "Winterbart",
+};
 
 interface AttributeRow<T extends string> {
   label: string;

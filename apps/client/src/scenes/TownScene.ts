@@ -3,6 +3,7 @@ import { getClassDefinition, getSkillsForClass } from "@solara/content";
 import { CLASS_UNLOCK_LEVEL, type SkillDefinition } from "@solara/shared";
 import {
   DEFAULT_ATTACK_DAMAGE,
+  DEFENSE_DAMAGE_REDUCTION_PER_POINT,
   DUMMY_XP_REWARD,
   ENEMY_DAMAGE,
   ENEMY_XP_REWARD,
@@ -309,7 +310,9 @@ export class TownScene extends Phaser.Scene {
 
   private damagePlayer(): void {
     if (this.playerDefeated) return;
-    this.playerHp = Math.max(0, this.playerHp - ENEMY_DAMAGE);
+    const defense = this.character.classId ? getClassDefinition(this.character.classId).baseStats.defense : 0;
+    const damage = Math.max(1, Math.round(ENEMY_DAMAGE - defense * DEFENSE_DAMAGE_REDUCTION_PER_POINT));
+    this.playerHp = Math.max(0, this.playerHp - damage);
     this.hud.setHealth(this.playerHp, this.playerMaxHp);
     if (this.playerHp === 0) this.onPlayerDefeated();
   }

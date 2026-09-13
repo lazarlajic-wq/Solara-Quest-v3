@@ -43,6 +43,12 @@ export const ENEMY_LEASH_RANGE = 220; // gives up chasing and returns home past 
 export const ENEMY_MOVE_SPEED = 90; // px/s
 export const ENEMY_RESPAWN_MS = 6000;
 
+// Each point of the defending class's baseStats.defense shaves this much off
+// incoming enemy damage (floored at 1 damage so defense can never grant full
+// immunity). Before a class is picked, defense is 0 and enemies hit at full
+// ENEMY_DAMAGE.
+export const DEFENSE_DAMAGE_REDUCTION_PER_POINT = 1 / 8;
+
 export const PLAYER_RESPAWN_DELAY_MS = 1200;
 
 // Skill bar (first slice: 3 real active skills per class on keys 1-3 of the

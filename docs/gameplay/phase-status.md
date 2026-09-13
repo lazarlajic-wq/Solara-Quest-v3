@@ -109,13 +109,16 @@ Done:
   background) — for slots 1-3 and empty placeholders for 4-9, since no
   skills exist for those slots yet; each icon dims when unaffordable and
   shows a cooldown wipe.
+- **`baseStats.defense` is now consumed**: incoming enemy damage is
+  `ENEMY_DAMAGE` minus `defense * DEFENSE_DAMAGE_REDUCTION_PER_POINT`
+  (`config.ts`), floored at 1 so defense can never grant full immunity.
+  E.g. a Tank (defense 22) takes 5 damage per hit instead of the flat 8;
+  a Mage (defense 6) takes 7; no class chosen yet still takes the full 8.
 
 Not done:
 - No skill tree or skill points — every class's 3 skills unlock all at
   once with the class, there's no branching/leveling-up of individual
   skills, and slots 4-9 of the bar are permanently empty in this slice.
-- `baseStats.defense` still isn't consumed — enemy damage is a flat
-  `ENEMY_DAMAGE` regardless of the defending class's defense stat.
 - No attack animation — the swing is a small scale-pulse tween on the
   character sprite, not a real animation (see Phase 2's "Known gaps": LPC's
   slash/attack frames aren't extracted yet, and pairing them per class
